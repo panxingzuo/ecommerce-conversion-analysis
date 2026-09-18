@@ -41,6 +41,7 @@
 | `02_data_cleaning` | 数据清洗与质量校验 | 去重、时间窗过滤、异常审查 |
 | `03_analysis_visualization` | **七章完整分析**（见下） | 描述统计 / 可视化 / 假设检验 |
 | `04_purchase_prediction` | 购买预测建模 | 逻辑回归 / 随机森林 / XGBoost |
+| `05_sql_analysis` | **SQL 版本**：核心分析用标准 SQL 重写 | CTE / 窗口函数 / 与 Python 逐项对账 |
 
 **`03` 的七个章节：**
 
@@ -56,6 +57,21 @@
 
 ---
 
+## SQL 版本
+
+核心分析除 Python 实现外，另用**标准 SQL**（通用写法，不绑定特定数据库方言）重写了一遍，位于 **[`sql/analysis.sql`](sql/analysis.sql)**：
+
+| 段 | 查询 | 覆盖的 SQL 能力 |
+| :--- | :--- | :--- |
+| `01` | 漏斗：行为并行渗透率 | CTE、`COUNT(DISTINCT CASE WHEN)`、`CROSS JOIN` |
+| `02` | 买家 R×F 九层分层 | 条件聚合、`CASE WHEN` 分桶、日期差换算 |
+| `03` | 老客 vs 新客零间隙率 | **累计计数窗口 + `LAG()` 跨行取差**（同秒排序权重） |
+| `04` | 观察窗特征表（9 个特征） | 时间窗过滤、多指标聚合并行、`LEFT JOIN` 保底 |
+
+**每一段的结果都与 pandas 实现逐项对账至完全一致**——26 个汇总指标 + `9 × 9,739` 个特征值，零差异。执行与对账过程见 **[`notebooks/05_sql_analysis.ipynb`](notebooks/05_sql_analysis.ipynb)**。
+
+---
+
 ## 技术亮点
 
 - **建模防数据泄漏**：采用「观察窗 7 天 → 预测窗 2 天」的时间切分，并用 `assert` 硬校验窗口不重叠 + 特征-标签相关性排查（防 target leakage）
@@ -63,6 +79,7 @@
 - **效应量优先于 p 值**：9,739 样本下 p 值必然显著，故改用 Cohen's h / Cliff's δ 做效应量排序，并区分符号（方向）与绝对值（强度）
 - **维度共线性诊断**：RFM 分层前先做 Spearman 相关 + 重合度双重检验，剔除与 F 高度共线（ρ = 0.985）的 M 维度，避免重复计权
 - **按数据形态选模型**：逻辑回归（CV AUC 0.6015）胜过随机森林与 XGBoost —— 本数据信号以线性/单调为主，复杂树模型反而过拟合
+- **Python + SQL 双实现并对账**：核心分析另用标准 SQL 重写，并逐项比对至与 pandas **完全一致**。这不是把同一件事做两遍——**它同时是一次代码交叉校验**：SQL 的 `ORDER BY` 强制显式声明排序键，而 pandas 的同秒排序是隐式的，写 SQL 的过程会把这些隐藏假设逼出来
 
 ---
 
@@ -74,7 +91,10 @@ ecommerce-conversion-analysis/
 │   ├── 01_data_exploration.ipynb        # 数据宏观了解
 │   ├── 02_data_cleaning.ipynb           # 数据清洗与质量校验
 │   ├── 03_analysis_visualization.ipynb  # 七章完整分析
-│   └── 04_purchase_prediction.ipynb     # 购买预测建模
+│   ├── 04_purchase_prediction.ipynb     # 购买预测建模
+│   └── 05_sql_analysis.ipynb            # SQL 版本：建库、执行与逐项对账
+├── sql/
+│   └── analysis.sql                     # 核心分析的 SQL 实现（4 段查询）
 ├── reports/
 │   └── summary_report.md                # 分析报告（结论 + 策略建议）
 ├── src/
@@ -104,9 +124,13 @@ uv sync
 
 # 3. 运行分析
 #    依次运行 notebooks/03 → 04
+
+# 4. 运行 SQL 版本
+#    运行 notebooks/05_sql_analysis.ipynb：自动建库 data/ecommerce.db，
+#    逐段执行 sql/analysis.sql，并与 Python 结果逐项对账
 ```
 
-> `data/`（数据文件）与 `.venv/`（虚拟环境）已在 `.gitignore` 中排除，不随仓库分发。
+> `data/`（数据文件，含 `ecommerce.db`）与 `.venv/`（虚拟环境）已在 `.gitignore` 中排除，不随仓库分发。
 
 ---
 

@@ -31,4 +31,7 @@ data/*.zip
 *.ipynb.bak
 .ipynb_checkpoints/
 
+# ============ 数据库文件（102MB，超 GitHub 100MB 硬限）============
+data/*.db
+
 
