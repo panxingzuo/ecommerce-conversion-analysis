@@ -57,6 +57,22 @@
 
 ---
 
+## 交互看板
+
+用 Plotly 做的自包含交互看板，把 5 条核心发现浓缩成一屏：**`dashboard/index.html`**
+
+- **本地查看**：clone 后直接双击打开 —— `plotly.js` 已随仓库分发，**无需联网**
+- **在线查看**：仓库启用 GitHub Pages 后，可通过 `https://panxingzuo.github.io/ecommerce-conversion-analysis/dashboard/` 访问
+
+**看板内容**：KPI 概览 → ① 行为渗透率 → ② 时间节律（流量高峰 ≠ 转化高峰）→ ③ R×F 九层分层 → ④ 老客 vs 新客 → ⑤ 未转化用户池
+
+```bash
+# 重新生成（数据全部现算，不硬编码）
+python dashboard/build_dashboard.py
+```
+
+---
+
 ## SQL 版本
 
 核心分析除 Python 实现外，另用**标准 SQL**（通用写法，不绑定特定数据库方言）重写了一遍，位于 **[`sql/analysis.sql`](sql/analysis.sql)**：
@@ -95,6 +111,10 @@ ecommerce-conversion-analysis/
 │   └── 05_sql_analysis.ipynb            # SQL 版本：建库、执行与逐项对账
 ├── sql/
 │   └── analysis.sql                     # 核心分析的 SQL 实现（4 段查询）
+├── dashboard/
+│   ├── build_dashboard.py               # 看板生成脚本
+│   ├── index.html                       # 交互看板（自包含，离线可开）
+│   └── plotly.min.js                    # 绘图库本地副本（不依赖 CDN）
 ├── reports/
 │   └── summary_report.md                # 分析报告（结论 + 策略建议）
 ├── src/
@@ -128,6 +148,9 @@ uv sync
 # 4. 运行 SQL 版本
 #    运行 notebooks/05_sql_analysis.ipynb：自动建库 data/ecommerce.db，
 #    逐段执行 sql/analysis.sql，并与 Python 结果逐项对账
+
+# 5. 生成交互看板
+#    python dashboard/build_dashboard.py  →  输出 dashboard/index.html
 ```
 
 > `data/`（数据文件，含 `ecommerce.db`）与 `.venv/`（虚拟环境）已在 `.gitignore` 中排除，不随仓库分发。
