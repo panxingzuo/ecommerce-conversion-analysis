@@ -59,16 +59,25 @@
 
 ## 交互看板
 
-用 Plotly 做的自包含交互看板，把 5 条核心发现浓缩成一屏：**`dashboard/index.html`**
+同一套结论做了**两个版本**的交互看板，互为验证。
+
+### ① Plotly 版 · 自包含 HTML（`dashboard/index.html`）
 
 - **本地查看**：clone 后直接双击打开 —— `plotly.js` 已随仓库分发，**无需联网**
 - **在线查看**：仓库启用 GitHub Pages 后，可通过 `https://panxingzuo.github.io/ecommerce-conversion-analysis/dashboard/` 访问
 
-**看板内容**：KPI 概览 → ① 行为渗透率 → ② 时间节律（流量高峰 ≠ 转化高峰）→ ③ R×F 九层分层 → ④ 老客 vs 新客 → ⑤ 未转化用户池
+### ② Tableau Public 版 · 在线作品
+
+🔗 **https://public.tableau.com/app/profile/xingzuo.pan/viz/-12_17918784363500/1**
+
+数据源不喂原始百万行，而由 `tableau/build_tableau_data.py` 生成两张小表（用户级宽表 9,739 行 + 小时聚合 96 行），口径与 `src/` 完全一致；5 张工作表组装为一个仪表板。
+
+**两个版本共同承载的内容**：KPI 概览 → ① 行为渗透率 → ② 时间节律（流量高峰 ≠ 转化高峰）→ ③ R×F 九层分层 → ④ 老客 vs 新客 → ⑤ 未转化用户池
 
 ```bash
 # 重新生成（数据全部现算，不硬编码）
-python dashboard/build_dashboard.py
+python dashboard/build_dashboard.py      # → dashboard/index.html
+python tableau/build_tableau_data.py     # → tableau/users.csv + tableau/hourly.csv
 ```
 
 ---
@@ -96,6 +105,7 @@ python dashboard/build_dashboard.py
 - **维度共线性诊断**：RFM 分层前先做 Spearman 相关 + 重合度双重检验，剔除与 F 高度共线（ρ = 0.985）的 M 维度，避免重复计权
 - **按数据形态选模型**：逻辑回归（CV AUC 0.6015）胜过随机森林与 XGBoost —— 本数据信号以线性/单调为主，复杂树模型反而过拟合
 - **Python + SQL 双实现并对账**：核心分析另用标准 SQL 重写，并逐项比对至与 pandas **完全一致**。这不是把同一件事做两遍——**它同时是一次代码交叉校验**：SQL 的 `ORDER BY` 强制显式声明排序键，而 pandas 的同秒排序是隐式的，写 SQL 的过程会把这些隐藏假设逼出来
+- **可视化双平台交付**：同一套结论分别用 Plotly（自包含 HTML，离线可开）与 Tableau Public（在线可交互）实现，说明结论不依赖特定工具
 
 ---
 
@@ -115,6 +125,10 @@ ecommerce-conversion-analysis/
 │   ├── build_dashboard.py               # 看板生成脚本
 │   ├── index.html                       # 交互看板（自包含，离线可开）
 │   └── plotly.min.js                    # 绘图库本地副本（不依赖 CDN）
+├── tableau/
+│   ├── build_tableau_data.py            # 生成 Tableau 数据源
+│   ├── users.csv                        # 用户级宽表（9,739 行 × 12 列）
+│   └── hourly.csv                       # 小时 × 行为聚合（96 行）
 ├── reports/
 │   └── summary_report.md                # 分析报告（结论 + 策略建议）
 ├── src/
@@ -151,6 +165,10 @@ uv sync
 
 # 5. 生成交互看板
 #    python dashboard/build_dashboard.py  →  输出 dashboard/index.html
+
+# 6. 生成 Tableau 数据源
+#    python tableau/build_tableau_data.py  →  输出 tableau/users.csv + tableau/hourly.csv
+#    上传至 Tableau Public / Web Authoring，即可复现上面的在线看板
 ```
 
 > `data/`（数据文件，含 `ecommerce.db`）与 `.venv/`（虚拟环境）已在 `.gitignore` 中排除，不随仓库分发。
